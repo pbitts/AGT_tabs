@@ -6,6 +6,7 @@ import numpy as np
 #from interfaces import Method
 
 class OnsetDetection:
+    #[(i,f),(i,f)]
     def __init__(self, audio_data, sample_rate, parameters):
         logger = logging.getLogger(OnsetDetection.__qualname__)
         self.audio_data = audio_data
@@ -15,9 +16,7 @@ class OnsetDetection:
         result_type = parameters.get('result_type', 'max')
         method = parameters.get('method', 'bypass')
         tactic = parameters.get('tactic', 'static' )
-
         logger.info(f'Method "{method}" | Tactic "{tactic}" ')
-
         if method == 'spectral_flush':
             spectral_flush_parameters = parameters.get('methods', {}).get('spectral_flush', {})
             result = self.spectral_flush(tactic,spectral_flush_parameters)
@@ -114,6 +113,7 @@ class OnsetDetection:
             n_fft = int(n_fft*audio_data_length)
             hop_length = parameters.get('hop_length', 0.032)
             hop_length = int(hop_length*audio_data_length)
+            #hop_length = int(librosa.time_to_samples(1./200, sr=sr))
             lag = parameters.get('lag', 2)
             n_mels = parameters.get('n_mels', 138)
             fmin = parameters.get('fmin', 27.5)
@@ -160,6 +160,18 @@ class OnsetDetection:
                         linestyle='--', label='Onsets')
                 plt.title(label='Super Flux Onset detection')
                 plt.show()
+                cmap = plt.colormaps['plasma']
+                fig, ax = plt.subplots(nrows=2, sharex=True)
+                img = librosa.display.specshow(representation,
+                          y_axis='mel', x_axis='time', ax=ax[0],cmap=cmap)
+                ax[0].set(title='Power spectrogram')
+                ax[0].label_outer()
+                D = librosa.feature.melspectrogram(y=self.audio_data,sr=self.sample_rate)
+                times = librosa.times_like(librosa.power_to_db(representation))
+                ax[1].plot(times,onset_env, alpha=0.8,
+                    label='Mean (mel)')
+                # fig.colorbar(img, ax=ax[0], format="%+2.f dB")
+                plt.show()
             except Exception as error_msg:
                 logger.error(f'An error ocurred when plotiing: {str(error_msg)}')
         
@@ -191,6 +203,7 @@ class OnsetDetection:
                 n_fft = int(n_fft*audio_data_length)
                 hop_length = parameters.get('hop_length', 0.032)
                 hop_length = int(hop_length*audio_data_length)
+                #hop_length = int(librosa.time_to_samples(1./200, sr=sr))
                 lag = parameters.get('lag', 2)
                 n_mels = parameters.get('n_mels', 138)
                 fmin = parameters.get('fmin', 27.5)
@@ -211,9 +224,8 @@ class OnsetDetection:
                                                     window=window,center=center,
                                                     pad_mode=pad_mode,power=power)
             return librosa.power_to_db(mel_spec)
-
         elif spectogram == 'cqt':
-            
+            #raise NotImplementedError()
             hop_length = parameters.get('hop_length',512)
             fmin = parameters.get('fmin',None)
             n_bins = parameters.get('n_bins',84)
@@ -243,6 +255,7 @@ class OnsetDetection:
             return [    (onsets[i], onsets[i+1]) for i in range(len(onsets)-1)]
         else:
             return onsets
+
 
     def bypass(self):
         return []

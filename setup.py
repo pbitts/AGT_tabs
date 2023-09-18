@@ -1,5 +1,6 @@
-#
-onset_detection_parameters = {
+
+
+OnsetDetection_parameters = {
                         'method': 'super_flux',
                         'tactic': 'dinamic',
                         'show': True,
@@ -14,6 +15,7 @@ onset_detection_parameters = {
                             },
                             'super_flux':{
                                 'static':{
+                                    ######## BEST SO FAR: 62.16931216931217,  Max size: 90,Win: 7040, lag: 2, Hop: 256, mel: 425, FFT 7040
                                     'n_fft' :8192,
                                     'hop_length' : 128, 
                                     'win_length': 8192,
@@ -45,7 +47,8 @@ onset_detection_parameters = {
 
 }
 
-f0_detection_parameters = {
+
+f0Detection_parameters = {
                         'method':'probabilistic_yin',
                         'tactic': 'dinamic',
                         'result_type': 'max_count',
@@ -87,12 +90,11 @@ f0_detection_parameters = {
                         }
 }
 
-position_selector_parameters = {
+Position_Selector_parameters = {
         'init': (0,0),
-        'end': (0,0),
+    'end': (0,0),
 }
-
-tablature_transcription_parameters = {
+Transcription_parameters = {
     'save_path':'C:\\Users\\home\\Desktop\\Projetos\\AGT_tabs\\tabs\\',
 
 }

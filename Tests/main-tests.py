@@ -3,9 +3,8 @@ import librosa
 
 from f0_detection import f0Detection
 from onset_detection import OnsetDetection
-from audio_sample_licks import audio_list
-from segment_silence import Segmentation
-from filters import Filter
+from apresentation_recording import audio_list
+
 from position_selector import Position_Selector
 from tablature_transcription import Tablature_Transcription
 
@@ -14,7 +13,7 @@ import numpy as np
 import json
 from Levenshtein import distance
 
-def main(f0Detection_parameters, OnsetDetection_parameters, Transcription_parameters):
+def main(f0Detection_parameters, OnsetDetection_parameters, Position_Selector_parameters, Transcription_parameters):
     logging.basicConfig(
                             format='%(asctime)s\t[%(name)s]\t[%(levelname)s]\t%(message)s',datefmt ="%Y-%m-%d %H:%M:%S%z",
                             level=logging.INFO,  encoding='utf-8',
@@ -75,9 +74,10 @@ def main(f0Detection_parameters, OnsetDetection_parameters, Transcription_parame
         logger.info(f"Audio:{audio['filename']}")
         notes = audio['predicted_f0'].copy()
         positions = Position_Selector(notes, 
-                                        init=Transcription_parameters.get('init'),
-                                        end=Transcription_parameters.get('end'))
+                                        init=Position_Selector_parameters.get('init'),
+                                        end=Position_Selector_parameters.get('end'))
         final_position = positions.get_solution()
+        logger.info(f'Position Selected: {final_position}')
         #transcribe into tabs
         tabs = Tablature_Transcription(positions=final_position[1:len(final_position)-1],
                                         save_path=Transcription_parameters.get('save_path'))
@@ -289,6 +289,8 @@ def automate_test_pyin(method):
     probs_list = [0.1,0.3,0.5,0.7,0.9] #5
     hop_list = [0.02,0.04, 0.06,0.08] #4
     win_list = [0.6,0.8,1.0] #3
+
+
     for probs in probs_list:
         for frame in frame_list:
             for hop in hop_list:
@@ -319,7 +321,7 @@ def automate_test_pyin(method):
                                         'win_length':win,
                                         'success': True
                                     })
-                        with open("pyin_tests.txt", "w") as f:
+                        with open("pyin_tests_other.txt", "w") as f:
                             f.write(str(results))
                         n += 1
                     except Exception as e:
@@ -336,7 +338,7 @@ def automate_test_pyin(method):
                                 'win_length':win,
                                 'success': False
                             })
-                        with open("pyin_tests.txt", "w") as f:
+                        with open("pyin_tests_other.txt", "w") as f:
                             f.write(str(results))
                         n +=1
                         logger.error(f'FAILED, IGNORING: {str(e)}')
@@ -352,20 +354,20 @@ def automate_test_onset(method='super_flux'):
     results = []
     n=1
     best =  62.16931216931217
-    with open('onset_tests_dinamic.txt', 'w') as f:
+    with open('onset_tests_other.txt', 'w') as f:
         f.write(str(best))
-    '''    max_size_list = [200] #1
+    max_size_list = [200] #1
     lag_list = [2] #1
     hop_list = [0.000001,0.00001, 0.0001, 0.001] #4
     mel_list = [200,600,700] #3
     fft_list = [ 0.001, 0.01,0.05, 0.1] #4
-    win_list = [0.8,0.9,1.0] #3'''
-    max_size_list = [100] #3
-    lag_list = [2] #1
-    hop_list = [0.0005] #3
-    mel_list = [200] #4
-    fft_list = [ 0.01] #1
-    win_list = [0.8] #1
+    win_list = [0.8,0.9,1.0] #3
+    # max_size_list = [100] #3
+    # lag_list = [2] #1
+    # hop_list = [0.0005] #3
+    # mel_list = [200] #4
+    # fft_list = [ 0.01] #1
+    # win_list = [0.8] #1
     #win_list = [1024, 4096, 7040, 8192] #4
     fmax = 2093.
     fmin = 82
@@ -410,7 +412,7 @@ def automate_test_onset(method='super_flux'):
 
                                 #logger.info(f'######## BEST SO FAR: {best},  Max size: {max_size},Win: {win}, lag: {lag}, Hop: {hop}, mel: {mel}, FFT {fft}')
                                 #print(f'######## BEST SO FAR: {best},  Max size: {max_size},Win: {win}, lag: {lag}, Hop: {hop}, mel: {mel}, FFT {fft}')
-                                with open("onset_tests_dinamic.txt", "w") as f:
+                                with open("onset_tests_other.txt", "w") as f:
                                     f.write(str(results))
                                 n += 1
                             except Exception as e:
@@ -431,17 +433,17 @@ def automate_test_onset(method='super_flux'):
                                         'fmin':fmin,
                                         'success': False,
                                     })
-                                with open("onset_tests_dinamic.txt", "w") as f:
+                                with open("onset_tests_other.txt", "w") as f:
                                     f.write(str(results))
                                 n += 1
                                 logger.error(f'FAILED, IGNORING: {str(e)}')
 
 
 if __name__ == '__main__':
-    from setup import f0Detection_parameters, OnsetDetection_parameters, Transcription_parameters
+    from setup import f0Detection_parameters, OnsetDetection_parameters, Position_Selector_parameters, Transcription_parameters
     accuracy, precision, recall, f_measure, levenshtein_distance = main(f0Detection_parameters, 
-                                OnsetDetection_parameters, Transcription_parameters
+                                OnsetDetection_parameters, Position_Selector_parameters,Transcription_parameters
                                 )
-    # automate_test_onset('super_flux')
+    #   automate_test_onset('super_flux')
     # automate_test_f0(method='crepe_pitch_tracker')
     # automate_test_pyin(method='probabilistic_yin')

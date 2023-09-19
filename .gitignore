@@ -3,5 +3,5 @@ venv
 IDMT-SMT
 *.mp3
 *.wav
-test/
+Tests/
 audios/

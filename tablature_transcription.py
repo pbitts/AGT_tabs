@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 
 class Tablature_Transcription:
@@ -20,7 +21,7 @@ class Tablature_Transcription:
     def transcribe(self, filename= ''):
         logger = logging.getLogger(Tablature_Transcription.transcribe.__qualname__)
 
-        tabs_filename = filename.split('.')[0] + '_tabs.txt'
+        tabs_filename = filename.split('.')[0] + f'_tabs_{datetime.now()}.txt'
         add = '---'
         for position in self.positions:
             string_position, fret_position = position
@@ -41,8 +42,5 @@ class Tablature_Transcription:
                 file.write(f"{self.string_to_note[key]}: {value}\n")
         
         logger.info('Tabs saved at ' + self.save_path + tabs_filename)
-        
-# if __name__ == '__main__':
-#     positions = [(1, 3), (1, 1), (1, 6), (1, 8), (1, 13), (1, 10), (1, 8), (1, 13), (1, 10), (1, 6), (1, 8), (1, 3), (1, 1)]
-#     tabs = Tablature_Transcription(positions)
-#     tabs.transcribe()
+
+        return self.save_path + tabs_filename

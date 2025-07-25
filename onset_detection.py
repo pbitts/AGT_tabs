@@ -13,15 +13,19 @@ class OnsetDetection:
         self.sample_rate = sample_rate
         self.show = parameters.get('show', False)
         self.delete_min = parameters.get('delete_min', False)
+        self.plot_path = None
+
         result_type = parameters.get('result_type', 'max')
         method = parameters.get('method', 'bypass')
         tactic = parameters.get('tactic', 'static' )
         logger.info(f'Method "{method}" | Tactic "{tactic}" ')
+
         if method == 'spectral_flush':
             spectral_flush_parameters = parameters.get('methods', {}).get('spectral_flush', {})
             result = self.spectral_flush(tactic,spectral_flush_parameters)
             self.spectral_flush_result = result
         elif method == 'super_flux':
+            logger.info('Processing SuperFlux...')
             super_flux_parameters = parameters.get('methods', {}).get('super_flux', {})
             result = self.super_flux(tactic,super_flux_parameters)
             self.super_flux_result = result
@@ -89,6 +93,7 @@ class OnsetDetection:
         logger = logging.getLogger(OnsetDetection.super_flux.__qualname__)
 
         if tactic == 'static':
+            logger.info('Processing Static Tactic...')
             #Default parameters are taken directly from Super flux paper
             parameters = parameters.get('static')
             n_fft = parameters.get('n_fft',1024)
@@ -107,6 +112,7 @@ class OnsetDetection:
             pad_mode= parameters.get('pad_mode','constant') 
             power= parameters.get('power',2.0)
         elif tactic == 'dinamic':
+            logger.info('Processing Dinamic Tactic...')
             parameters = parameters.get('dinamic')
             audio_data_length = len(self.audio_data)
             n_fft = parameters.get('n_fft',0.2)
@@ -127,7 +133,8 @@ class OnsetDetection:
             pad_mode= parameters.get('pad_mode','constant') 
             power= parameters.get('power',2.0)
 
-        
+        logger.info('Processing Spectogram...')
+
         representation = self.get_spectogram(spectogram, parameters, tactic)
         onset_env = librosa.onset.onset_strength(S=librosa.power_to_db(representation, ref=np.mean),
                                                 sr=self.sample_rate,
@@ -151,8 +158,10 @@ class OnsetDetection:
         onset_times = self.group_onsets(np.append(onset_times, audio_duration))
 
         if self.show:
+            from datetime import datetime
             import matplotlib.pyplot as plt
             try:
+                logger.info('Processing Plot...')
                 audio_duration = librosa.get_duration(y=self.audio_data, sr=self.sample_rate)
                 audio_time = np.arange(0.0, audio_duration, (1/(self.sample_rate)))
                 plt.plot(audio_time, self.audio_data, color='darkblue' )
@@ -171,7 +180,8 @@ class OnsetDetection:
                 ax[1].plot(times,onset_env, alpha=0.8,
                     label='Mean (mel)')
                 # fig.colorbar(img, ax=ax[0], format="%+2.f dB")
-                plt.show()
+                self.plot_path = f'static/plots/onset_detection_result-{datetime.now()}.png'
+                plt.savefig(self.plot_path)
             except Exception as error_msg:
                 logger.error(f'An error ocurred when plotiing: {str(error_msg)}')
         

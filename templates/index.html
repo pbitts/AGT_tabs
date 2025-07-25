@@ -84,7 +84,14 @@
     </style>
 </head>
 <body>
-    <h1>Audio Transcription Tool</h1>
+    <h1>Automatic transcription of monophonic guitar audios to tablature</h1>
+    <div style="text-align: center; margin-top: 10px;">
+      <a href="https://zenodo.org/records/14804501" target="_blank"
+        style="display: inline-block; font-size: 18px; font-weight: bold; color: #ffffff; background-color: #3498db;
+                padding: 10px 20px; border-radius: 6px; text-decoration: none;">
+          📄 Read Paper
+      </a>
+    </div>
     <form action="/transcribe" method="POST">
         <div class="section">
             <fieldset>
@@ -101,16 +108,20 @@
                 </audio>
 
                 <label>Start Time (seconds):</label>
-                <input type="number" name="start" step="0.1" value="0">
+                <input type="number" name="audio_start" step="0.1" value="0">
 
                 <label>End Time (seconds):</label>
-                <input type="number" name="end" step="0.1" value="0">
+                <input type="number" name="audio_end" step="0.1" value="0">
+
+                <label>Sample Rate (Hz):</label>
+                <input type="number" name="sample_rate" value="44100">
+
             </fieldset>
         </div>
 
         <div class="section">
             <fieldset>
-                <legend>⚡ Onset Detection (SuperFlux)</legend>
+                <legend>⚡ Onset Detection (SuperFlux) (dinamic values relative to the nº of samples)</legend>
                 <label>FFT Window Size (n_fft):</label><input type="number" step="0.001" name="n_fft" value="0.01">
                 <label>Hop Length:</label><input type="number" step="0.0001" name="hop_length" value="0.0005">
                 <label>Window Length:</label><input type="number" step="0.01" name="win_length" value="0.8">
@@ -134,7 +145,7 @@
             </fieldset>
 
             <fieldset id="yin_fields">
-                <legend>🎵 Probabilistic YIN Settings</legend>
+                <legend>🎵 Probabilistic YIN Settings (dinamic values relative to the nº of samples)</legend>
                 <label>Voiced Probability Filter:</label><input type="number" step="0.01" name="voiced_probs_filter" value="0.5">
                 <label>Frame Length (seconds):</label><input type="number" step="0.1" name="frame_length" value="2.0">
                 <label>Window Length:</label><input type="number" step="0.01" name="yin_win_length" value="0.6">
@@ -144,13 +155,13 @@
             </fieldset>
 
             <fieldset id="crepe_fields" class="hidden">
-                <legend>🎵 CREPE Pitch Tracker Settings</legend>
+                <legend>🎵 CREPE Pitch Tracker Settings (dinamic values relative to the nº of samples)</legend>
                 <label>Confidence Threshold:</label><input type="number" step="0.1" name="confidence_filter" value="0.7">
                 <label>Step Size (seconds):</label><input type="number" step="0.01" name="step_size" value="0.01">
             </fieldset>
 
             <fieldset>
-                <legend>🧭 Position Selector</legend>
+                <legend>🧭 Position Selector on the guitar fretboard</legend>
                 <label>Start Position (X):</label>
                 <input type="number" name="init_x" step="0.1" value="0">
                 <label>Start Position (Y):</label>
@@ -192,6 +203,14 @@
         document.addEventListener('DOMContentLoaded', function () {
             methodSelect.dispatchEvent(new Event('change'));
         });
+
+        // Inputs
+        const audioStartInput = document.querySelector('input[name="audio_start"]');
+        const audioEndInput = document.querySelector('input[name="audio_end"]');
+        const sampleRateInput = document.querySelector('input[name="sample_rate"]');
+
+   
+
     </script>
 </body>
 </html>

@@ -3,5 +3,3 @@ venv
 IDMT-SMT
 Tests/
 *.logs
-*.png
-*.txt

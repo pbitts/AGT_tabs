@@ -5,3 +5,5 @@ IDMT-SMT
 *.wav
 Tests/
 *.logs
+*.png
+*.txt

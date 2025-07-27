@@ -81,6 +81,27 @@
         .hidden {
             display: none;
         }
+
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.9);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #loadingBox {
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
     </style>
 </head>
 <body>
@@ -109,7 +130,7 @@
                 
                 <h5>This is an experimental service, it could crash due overload, 
                     keep around 10 secs max and 22050Hz Sampling Rate for better experience. 
-                    It May take some time to process.</h5>
+                    Don't Worry! Nonetheless it may take some time to process.</h5>
                 <label>Start Time (seconds):</label>
                 <input type="number" name="audio_start" step="0.1" value="0">
 
@@ -238,8 +259,38 @@
             e.preventDefault();
             return;
         }
+
+        const overlay = document.getElementById('loadingOverlay');
+        const message = document.getElementById('loadingMessage');
+        const messages = [
+            "⏳ Transcribing audio... please wait.",
+            "📖 Read the original paper while you wait: https://zenodo.org/records/14804501",
+            "🌐 Explore more projects on our homepage: https://pbitts.github.io",
+            "🎸 Analyzing your guitar audio...",
+            "🛠️ Please be patient, this may take a few moments."
+        ];
+        let index = 0;
+        overlay.style.display = 'flex';
+        message.textContent = messages[index];
+
+        setInterval(() => {
+            index = (index + 1) % messages.length;
+            message.textContent = messages[index];
+        }, 5000); // troca a cada 5 segundos
+    
+    
     });
+
+    
+
 </script>
+
+<div id="loadingOverlay" style="display: none;">
+    <div id="loadingBox">
+        <p id="loadingMessage">Please wait while we transcribe your audio...</p>
+    </div>
+</div>
+
 
 </body>
 </html>

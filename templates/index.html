@@ -164,7 +164,7 @@
                 <label for="f0_method">Choose a method:</label>
                 <select name="f0_method" id="f0_method">
                     <option value="probabilistic_yin" selected>Probabilistic YIN</option>
-                    <option value="crepe_pitch_tracker">CREPE Pitch Tracker</option>
+                    <!-- <option value="crepe_pitch_tracker">CREPE Pitch Tracker</option> -->
                 </select>
             </fieldset>
 
@@ -177,7 +177,8 @@
                 <label>Minimum Frequency (Hz):</label><input type="number" name="yin_fmin" value="82.0">
                 <label>Number of Thresholds:</label><input type="number" name="n_thresholds" value="100">
             </fieldset>
-
+            
+            <!-- CREPE Method no available yet because Render FREE plan gets overloaded -->
             <fieldset id="crepe_fields" class="hidden">
                 <legend>🎵 CREPE Pitch Tracker Settings (dinamic values relative to the nº of samples)</legend>
                 <label>Confidence Threshold:</label><input type="number" step="0.1" name="confidence_filter" value="0.7">

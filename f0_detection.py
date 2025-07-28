@@ -106,7 +106,7 @@ class f0Detection:
                                                                 self.sample_rate, 
                                                                 step_size = step_size,
                                                                 viterbi=True,
-                                                                model_capacity='tiny'
+                                                                model_capacity='full'
                                                                 )
         except Exception as error_msg:
             logger.error(f'Could not proceed with crepe pitch tracker: {str(error_msg)}')

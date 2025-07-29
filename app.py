@@ -11,7 +11,7 @@ AUDIO_FOLDER = os.path.join('static', 'audios')
 
 @app.route('/')
 def index():
-    audio_files = [f for f in os.listdir(AUDIO_FOLDER) if f.endswith('.wav')]
+    audio_files = [f for f in os.listdir(AUDIO_FOLDER) if f.endswith('.wav') or f.endswith('.ogg')]
     return render_template('index.html', audio_files=audio_files)
 
 @app.route('/transcribe', methods=['POST'])

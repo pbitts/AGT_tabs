@@ -128,9 +128,6 @@
                     <source src="/static/audios/{{ audio_files[0] }}" type="audio/mpeg">
                 </audio>
                 
-                <h5>This is an experimental service, it could crash due overload, 
-                    keep around 10 secs max and 22050Hz Sampling Rate for better experience. 
-                    Don't Worry! Nonetheless it may take some time to process.</h5>
                 <label>Start Time (seconds):</label>
                 <input type="number" name="audio_start" step="0.1" value="0">
 
@@ -138,7 +135,7 @@
                 <input type="number" name="audio_end" step="0.1" value="0">
 
                 <label>Sample Rate (Hz):</label>
-                <input type="number" name="sample_rate" value="22050">
+                <input type="number" name="sample_rate" value="44100">
 
             </fieldset>
         </div>
@@ -164,7 +161,7 @@
                 <label for="f0_method">Choose a method:</label>
                 <select name="f0_method" id="f0_method">
                     <option value="probabilistic_yin" selected>Probabilistic YIN</option>
-                    <!-- <option value="crepe_pitch_tracker">CREPE Pitch Tracker</option> -->
+                    <option value="crepe_pitch_tracker">CREPE Pitch Tracker</option>
                 </select>
             </fieldset>
 
@@ -249,17 +246,6 @@
             return;
         }
 
-        if ((end - start) > 10) {
-            alert("Audio segment duration must not exceed 10 seconds.");
-            e.preventDefault();
-            return;
-        }
-
-        if (sampleRate > 22050) {
-            alert("Sample rate must not exceed 22050 Hz.");
-            e.preventDefault();
-            return;
-        }
 
         const overlay = document.getElementById('loadingOverlay');
         const message = document.getElementById('loadingMessage');

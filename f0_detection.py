@@ -14,6 +14,7 @@ class f0Detection:
         self.show = parameters.get('show', False)
         self.delete_min = parameters.get('delete_min', False)
         self.verbose = parameters.get('verbose', False)
+        self.plot_path = None
         result_type = parameters.get('result_type', 'max')
         method = parameters.get('method', 'bypass')
         tactic = parameters.get('tactic', 'static' )
@@ -26,8 +27,10 @@ class f0Detection:
             result = self.crepe_pitch_tracker(tactic, crepe_pitch_tracker_parameters)
             self.crepe_pitch_tracker_result = result
         elif method == 'probabilistic_yin':
+            logger.info('Processing Probabilistic YIN...')
             probabilistic_yin_parameters = parameters.get('methods', {}).get('probabilistic_yin', {})
             result = self.probabilistic_yin(tactic,probabilistic_yin_parameters)
+            logger.info(f'Probabilistic Yin Result: {result}')
             self.probabilistic_yin_result = result
         elif method == 'crepe_and_yin':
             result = {'f0':[], 'times': []}
@@ -41,25 +44,40 @@ class f0Detection:
             result['f0'] += crepe_result.get('f0', [])
         else:
             result = self.bypass()
-        
+        logger.info("Setting final result...")
         self.final_result = self.get_results(result, result_type)
         
     
     def get_results(self, results, result_type):
         logger = logging.getLogger(f0Detection.get_results.__qualname__)
+
+        logger.info(f'Result strategy: {result_type}')
+
         f0 = results['f0']
-        if f0 == []:
-            logger.warning('No notes identified')
-            return f0
+        logger.info(f'F0: {f0}, {type(f0)}, {len(f0)}')
+
+
+        if type(f0) == np.ndarray:
+            if f0.size == 0:
+                logger.warning('No notes identified in array f0')
+                return f0
+        elif type(f0) == list:
+            if not f0:
+                logger.warning('No notes identified in list f0')
+                return f0
+            
         if result_type == 'max':
             max_note = librosa.hz_to_note(max(f0))
             logger.info(f'Max note: {max_note}')
             return max_note
+        
         elif result_type == 'max_count':
             from collections import Counter
+            logger.info('Processing "max_count"...')
             max_count_note = Counter(f0).most_common(1)[0][0]
             logger.info(f'Max count note: {max_count_note}')
-            return max_count_note
+            return str(max_count_note)
+        
         else:
             logger.error(f'Result type "{result_type}" not found, returning None.')
             return ''
@@ -207,6 +225,7 @@ class f0Detection:
                 logger.info(f'{times[i]}  -  {librosa.hz_to_note(f0[i])}  -  {voiced_flags[i]}  -  {voiced_probs[i]}')
         
         if self.show:
+            from datetime import datetime
             import matplotlib.pyplot as plt
             try:
                 D = librosa.amplitude_to_db(np.abs(librosa.stft(self.audio_data, 
@@ -220,10 +239,11 @@ class f0Detection:
                 fig.colorbar(img, ax=ax, format="%+2.f dB")
                 ax.plot(times, f0, label='f0', color='cyan', linewidth=3)
                 ax.legend(loc='upper right')
-
-                plt.show()
+                self.plot_path = f'static/plots/f0_detection__probabilistic_yin_result-{datetime.now()}.png'
+                plt.savefig(self.plot_path)
             except Exception as error_msg:
                 logger.error(f'An error ocurred when plotting: {str(error_msg)}')
+                
         if not type(f0) == list:
             f0 = f0.tolist()
         if not type(times) == list:
@@ -254,7 +274,11 @@ class f0Detection:
         logger.info(f' New F0: {f0}')
 
         if f0 != []:
-            f0 = librosa.hz_to_note(f0)
+            try:
+                f0 = librosa.hz_to_note(f0)
+                logger.info(f'F0 NOTE: {f0}')
+            except Exception as e:
+                logger.fatal(f'Failed to convert hz to note: {str(e)}')
         return {'f0':f0, 'times':times, 'voiced_flags':voiced_flags, 'voiced_probs':voiced_probs}
     
     def bypass(self):

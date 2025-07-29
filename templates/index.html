@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Audio Transcription Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        form {
+            max-width: 800px;
+            margin: auto;
+            background-color: #fff;
+            padding: 25px 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        fieldset {
+            border: none;
+            margin-bottom: 20px;
+            padding: 0;
+        }
+
+        legend {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        label {
+            display: block;
+            margin: 8px 0 4px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto 0;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.9);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #loadingBox {
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Automatic transcription of monophonic guitar audios to tablature</h1>
+    <div style="text-align: center; margin-top: 10px;">
+      <a href="https://zenodo.org/records/14804501" target="_blank"
+        style="display: inline-block; font-size: 18px; font-weight: bold; color: #ffffff; background-color: #3498db;
+                padding: 10px 20px; border-radius: 6px; text-decoration: none;">
+          📄 Read Paper
+      </a>
+    </div>
+    <form action="/transcribe" method="POST">
+        <div class="section">
+            <fieldset>
+                <legend>🎵 Audio Selection (from IDMT-SMT-GUITAR-V2)</legend>
+                <label for="audio_file">Audio File:</label>
+                <select name="audio_file" id="audio_file">
+                    {% for audio in audio_files %}
+                        <option value="{{ audio }}">{{ audio }}</option>
+                    {% endfor %}
+                </select>
+
+                <audio id="player" controls>
+                    <source src="/static/audios/{{ audio_files[0] }}" type="audio/mpeg">
+                </audio>
+                
+                <h5>This is an experimental service, it could crash due overload, 
+                    keep around 10 secs max and 22050Hz Sampling Rate for better experience. 
+                    Don't Worry! Nonetheless it may take some time to process.</h5>
+                <label>Start Time (seconds):</label>
+                <input type="number" name="audio_start" step="0.1" value="0">
+
+                <label>End Time (seconds):</label>
+                <input type="number" name="audio_end" step="0.1" value="0">
+
+                <label>Sample Rate (Hz):</label>
+                <input type="number" name="sample_rate" value="22050">
+
+            </fieldset>
+        </div>
+
+        <div class="section">
+            <fieldset>
+                <legend>⚡ Onset Detection (SuperFlux) (dinamic values relative to the nº of samples)</legend>
+                <label>FFT Window Size (n_fft):</label><input type="number" step="0.001" name="n_fft" value="0.01">
+                <label>Hop Length:</label><input type="number" step="0.0001" name="hop_length" value="0.0005">
+                <label>Window Length:</label><input type="number" step="0.01" name="win_length" value="0.8">
+                <label>Lag:</label><input type="number" name="lag" value="2">
+                <label>Number of Mel Bands:</label><input type="number" name="n_mels" value="200">
+                <label>Min Frequency (Hz):</label><input type="number" name="fmin" value="82">
+                <label>Max Frequency (Hz):</label><input type="number" name="fmax" value="2093">
+                <label>Max Size:</label><input type="number" name="max_size" value="100">
+                <label>Spectrogram Type:</label><input type="text" name="spectogram" value="mel">
+            </fieldset>
+        </div>
+
+        <div class="section">
+            <fieldset>
+                <legend>🎯 Pitch Detection Method</legend>
+                <label for="f0_method">Choose a method:</label>
+                <select name="f0_method" id="f0_method">
+                    <option value="probabilistic_yin" selected>Probabilistic YIN</option>
+                    <!-- <option value="crepe_pitch_tracker">CREPE Pitch Tracker</option> -->
+                </select>
+            </fieldset>
+
+            <fieldset id="yin_fields">
+                <legend>🎵 Probabilistic YIN Settings (dinamic values relative to the nº of samples)</legend>
+                <label>Voiced Probability Filter:</label><input type="number" step="0.01" name="voiced_probs_filter" value="0.5">
+                <label>Frame Length (seconds):</label><input type="number" step="0.1" name="frame_length" value="2.0">
+                <label>Window Length:</label><input type="number" step="0.01" name="yin_win_length" value="0.6">
+                <label>Hop Length:</label><input type="number" step="0.01" name="yin_hop_length" value="0.02">
+                <label>Minimum Frequency (Hz):</label><input type="number" name="yin_fmin" value="82.0">
+                <label>Number of Thresholds:</label><input type="number" name="n_thresholds" value="100">
+            </fieldset>
+            
+            <!-- CREPE Method no available yet because Render FREE plan gets overloaded -->
+            <fieldset id="crepe_fields" class="hidden">
+                <legend>🎵 CREPE Pitch Tracker Settings (dinamic values relative to the nº of samples)</legend>
+                <label>Confidence Threshold:</label><input type="number" step="0.1" name="confidence_filter" value="0.7">
+                <label>Step Size (seconds):</label><input type="number" step="0.01" name="step_size" value="0.01">
+            </fieldset>
+
+            <fieldset>
+                <legend>🧭 Position Selector on the guitar fretboard</legend>
+                <label>Start Position (X):</label>
+                <input type="number" name="init_x" step="0.1" value="0">
+                <label>Start Position (Y):</label>
+                <input type="number" name="init_y" step="0.1" value="0">
+                <label>End Position (X):</label>
+                <input type="number" name="end_x" step="0.1" value="0">
+                <label>End Position (Y):</label>
+                <input type="number" name="end_y" step="0.1" value="0">
+            </fieldset>
+
+        </div>
+
+        <button type="submit">Start Transcription</button>
+    </form>
+
+<script>
+    const select = document.getElementById('audio_file');
+    const player = document.getElementById('player');
+    const methodSelect = document.getElementById('f0_method');
+    const yinFields = document.getElementById('yin_fields');
+    const crepeFields = document.getElementById('crepe_fields');
+
+    // Atualiza player ao trocar o áudio
+    select.addEventListener('change', function () {
+        player.src = `/static/audios/${this.value}`;
+        player.load();
+    });
+
+    // Alterna campos do método de detecção de pitch
+    methodSelect.addEventListener('change', function () {
+        if (this.value === 'probabilistic_yin') {
+            yinFields.classList.remove('hidden');
+            crepeFields.classList.add('hidden');
+        } else if (this.value === 'crepe_pitch_tracker') {
+            crepeFields.classList.remove('hidden');
+            yinFields.classList.add('hidden');
+        }
+    });
+
+    // Garante que os campos estejam corretos ao carregar
+    document.addEventListener('DOMContentLoaded', function () {
+        methodSelect.dispatchEvent(new Event('change'));
+    });
+
+    // ✅ Validação antes de enviar o formulário
+    document.querySelector("form").addEventListener("submit", function (e) {
+        const start = parseFloat(document.querySelector('[name="audio_start"]').value);
+        const end = parseFloat(document.querySelector('[name="audio_end"]').value);
+        const sampleRate = parseInt(document.querySelector('[name="sample_rate"]').value);
+
+        if (isNaN(start) || isNaN(end)) {
+            alert("Please enter valid numeric values for Start and End Time.");
+            e.preventDefault();
+            return;
+        }
+
+        if (end <= start) {
+            alert("End Time must be greater than Start Time.");
+            e.preventDefault();
+            return;
+        }
+
+        if ((end - start) > 10) {
+            alert("Audio segment duration must not exceed 10 seconds.");
+            e.preventDefault();
+            return;
+        }
+
+        if (sampleRate > 22050) {
+            alert("Sample rate must not exceed 22050 Hz.");
+            e.preventDefault();
+            return;
+        }
+
+        const overlay = document.getElementById('loadingOverlay');
+        const message = document.getElementById('loadingMessage');
+        const messages = [
+            "⏳ Transcribing audio... please wait.",
+            "📖 Read the original paper while you wait: https://zenodo.org/records/14804501",
+            "🌐 Explore more projects on our homepage: https://pbitts.github.io",
+            "🎸 Analyzing your guitar audio...",
+            "🛠️ Please be patient, this may take a few moments."
+        ];
+        let index = 0;
+        overlay.style.display = 'flex';
+        message.textContent = messages[index];
+
+        setInterval(() => {
+            index = (index + 1) % messages.length;
+            message.textContent = messages[index];
+        }, 5000); // troca a cada 5 segundos
+    
+    
+    });
+
+    
+
+</script>
+
+<div id="loadingOverlay" style="display: none;">
+    <div id="loadingBox">
+        <p id="loadingMessage">Please wait while we transcribe your audio...</p>
+    </div>
+</div>
+
+
+</body>
+</html>

@@ -1,6 +1,8 @@
+from hashlib import md5
 import logging
 
 import librosa
+import matplotlib.pyplot as plt
 import numpy as np
 
 #from interfaces import Method
@@ -13,15 +15,19 @@ class OnsetDetection:
         self.sample_rate = sample_rate
         self.show = parameters.get('show', False)
         self.delete_min = parameters.get('delete_min', False)
+        self.plot_path = None
+
         result_type = parameters.get('result_type', 'max')
         method = parameters.get('method', 'bypass')
         tactic = parameters.get('tactic', 'static' )
         logger.info(f'Method "{method}" | Tactic "{tactic}" ')
+
         if method == 'spectral_flush':
             spectral_flush_parameters = parameters.get('methods', {}).get('spectral_flush', {})
             result = self.spectral_flush(tactic,spectral_flush_parameters)
             self.spectral_flush_result = result
         elif method == 'super_flux':
+            logger.info('Processing SuperFlux...')
             super_flux_parameters = parameters.get('methods', {}).get('super_flux', {})
             result = self.super_flux(tactic,super_flux_parameters)
             self.super_flux_result = result
@@ -89,45 +95,32 @@ class OnsetDetection:
         logger = logging.getLogger(OnsetDetection.super_flux.__qualname__)
 
         if tactic == 'static':
+            logger.info('Processing Static Tactic...')
             #Default parameters are taken directly from Super flux paper
             parameters = parameters.get('static')
             n_fft = parameters.get('n_fft',1024)
             hop_length = parameters.get('hop_lenght', 
                                         int(librosa.time_to_samples(1./200, sr=self.sample_rate)))
-            #hop_length = int(librosa.time_to_samples(1./200, sr=sr))
             lag = parameters.get('lag', 2)
-            n_mels = parameters.get('n_mels', 138)
-            fmin = parameters.get('fmin', 27.5)
-            fmax = parameters.get('fmax',16000.)
             max_size = parameters.get('max_size',3)
             spectogram = parameters.get('spectogram', 'mel')
             win_length= parameters.get('win_length', None)
-            window= parameters.get('window', 'hann') 
-            center= parameters.get('center', True) 
-            pad_mode= parameters.get('pad_mode','constant') 
-            power= parameters.get('power',2.0)
         elif tactic == 'dinamic':
+            logger.info('Processing Dinamic Tactic...')
             parameters = parameters.get('dinamic')
             audio_data_length = len(self.audio_data)
             n_fft = parameters.get('n_fft',0.2)
             n_fft = int(n_fft*audio_data_length)
             hop_length = parameters.get('hop_length', 0.032)
             hop_length = int(hop_length*audio_data_length)
-            #hop_length = int(librosa.time_to_samples(1./200, sr=sr))
             lag = parameters.get('lag', 2)
-            n_mels = parameters.get('n_mels', 138)
-            fmin = parameters.get('fmin', 27.5)
-            fmax = parameters.get('fmax',16000.)
             max_size = parameters.get('max_size',3)
             spectogram = parameters.get('spectogram', 'mel')
             win_length= parameters.get('win_length', 0.6)
             win_length = int(win_length*n_fft)
-            window= parameters.get('window', 'hann') 
-            center= parameters.get('center', True) 
-            pad_mode= parameters.get('pad_mode','constant') 
-            power= parameters.get('power',2.0)
 
-        
+        logger.info('Processing Spectogram...')
+
         representation = self.get_spectogram(spectogram, parameters, tactic)
         onset_env = librosa.onset.onset_strength(S=librosa.power_to_db(representation, ref=np.mean),
                                                 sr=self.sample_rate,
@@ -151,8 +144,8 @@ class OnsetDetection:
         onset_times = self.group_onsets(np.append(onset_times, audio_duration))
 
         if self.show:
-            import matplotlib.pyplot as plt
             try:
+                logger.info('Processing Plot...')
                 audio_duration = librosa.get_duration(y=self.audio_data, sr=self.sample_rate)
                 audio_time = np.arange(0.0, audio_duration, (1/(self.sample_rate)))
                 plt.plot(audio_time, self.audio_data, color='darkblue' )
@@ -170,8 +163,9 @@ class OnsetDetection:
                 times = librosa.times_like(librosa.power_to_db(representation))
                 ax[1].plot(times,onset_env, alpha=0.8,
                     label='Mean (mel)')
-                # fig.colorbar(img, ax=ax[0], format="%+2.f dB")
-                plt.show()
+                params_hash = md5(str(parameters).encode()).hexdigest()
+                self.plot_path = f'static/plots/onset_detection_result-{params_hash}.png'
+                plt.savefig(self.plot_path)
             except Exception as error_msg:
                 logger.error(f'An error ocurred when plotiing: {str(error_msg)}')
         
@@ -187,11 +181,9 @@ class OnsetDetection:
                 n_fft = parameters.get('n_fft',1024)
                 hop_length = parameters.get('hop_lenght', 
                                             int(librosa.time_to_samples(1./200, sr=self.sample_rate)))
-                lag = parameters.get('lag', 2)
                 n_mels = parameters.get('n_mels', 138)
                 fmin = parameters.get('fmin', 27.5)
                 fmax = parameters.get('fmax',16000.)
-                max_size = parameters.get('max_size',3)
                 win_length= parameters.get('win_length', None)
                 window= parameters.get('window', 'hann') 
                 center= parameters.get('center', True) 
@@ -203,12 +195,9 @@ class OnsetDetection:
                 n_fft = int(n_fft*audio_data_length)
                 hop_length = parameters.get('hop_length', 0.032)
                 hop_length = int(hop_length*audio_data_length)
-                #hop_length = int(librosa.time_to_samples(1./200, sr=sr))
-                lag = parameters.get('lag', 2)
                 n_mels = parameters.get('n_mels', 138)
                 fmin = parameters.get('fmin', 27.5)
                 fmax = parameters.get('fmax',16000.)
-                max_size = parameters.get('max_size',3)
                 spectogram = parameters.get('spectogram', 'mel')
                 win_length= parameters.get('win_length', 0.6)
                 win_length = int(win_length*n_fft)
@@ -228,25 +217,9 @@ class OnsetDetection:
             #raise NotImplementedError()
             hop_length = parameters.get('hop_length',512)
             fmin = parameters.get('fmin',None)
-            n_bins = parameters.get('n_bins',84)
-            bins_per_octave = parameters.get('bins_per_octave',12)
-            tuning = parameters.get('tuning', 0.0)
-            filter_scale = parameters.get('filter_scale',1)
-            norm = parameters.get('norm',1)
-            sparsity = parameters.get('sparsity', 0.01)
             window= parameters.get('window', 'hann') 
-            scale = parameters.get('scale',True)
             pad_mode= parameters.get('pad_mode','constant')
-            res_type = parameters.get('res_type', 'kaiser_best')
-            dtype = parameters.get('dtype',None)
             return librosa.cqt(y=self.audio_data, sr=self.sample_rate)
-            '''n_bins=n_bins,
-            bins_per_octave=bins_per_octave,
-            tuning=tuning,filter_scale=filter_scale,
-            norm=norm,sparsity=sparsity,
-            window=window,scale=scale,
-            pad_mode=pad_mode,res_type=res_type,
-            dtype=dtype'''
         elif spectogram == 'fft':
             return 0 
 

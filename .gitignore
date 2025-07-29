@@ -1,7 +1,5 @@
 __pycache__
 venv
 IDMT-SMT
-*.mp3
-*.wav
 Tests/
-audios/
+*.logs
